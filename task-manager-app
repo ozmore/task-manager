@@ -1,0 +1,49 @@
+import React, { useState, useEffect } from "react";
+import { db } from "./firebase"; // Firebase config needed
+import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { Button, Input } from "@/components/ui/button";
+
+export default function TaskManager() {
+  const [tasks, setTasks] = useState([]);
+  const [task, setTask] = useState("");
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const fetchTasks = async () => {
+    const querySnapshot = await getDocs(collection(db, "tasks"));
+    setTasks(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
+
+  const addTask = async () => {
+    if (task.trim()) {
+      const docRef = await addDoc(collection(db, "tasks"), { text: task });
+      setTasks([...tasks, { id: docRef.id, text: task }]);
+      setTask("");
+    }
+  };
+
+  const deleteTask = async (id) => {
+    await deleteDoc(doc(db, "tasks", id));
+    setTasks(tasks.filter(task => task.id !== id));
+  };
+
+  return (
+    <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-md">
+      <h2 className="text-xl font-bold">Task Manager</h2>
+      <div className="flex mt-4">
+        <Input value={task} onChange={(e) => setTask(e.target.value)} placeholder="New Task" />
+        <Button onClick={addTask} className="ml-2">Add</Button>
+      </div>
+      <ul className="mt-4">
+        {tasks.map((task) => (
+          <li key={task.id} className="flex justify-between p-2 border-b">
+            {task.text}
+            <Button onClick={() => deleteTask(task.id)} className="text-red-500">Delete</Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
